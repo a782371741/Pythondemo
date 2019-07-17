@@ -6,18 +6,21 @@ import json
 from multiprocessing import Pool
 import csv
 import os
-import test1
 import time
+import random
+import datetime
 
-headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'}
-filename='test.csv'
+
+headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'}
+
 # 存放每一个楼盘的数组
 indexurl = []
 # 存放每一个楼盘的名称
 indexestate = []
 url = 'https://newhouse.cnnbfdc.com'
 url3 = 'https://newhouse.cnnbfdc.com/project/page_'
-
+s=""
+filename=str(datetime.datetime.strftime(datetime.datetime.now(),'%Y%m%d%H%M%S'))+'.csv'
 def save_csv(items):#写入csv
     if os.path.exists(filename):
         with open(filename, 'a',newline="")as f:
@@ -31,31 +34,36 @@ def save_csv(items):#写入csv
 
 def get_url_list(url,headers,pattern):#requests+正则表达式，通过url+pattern，返回需要的数据列表
     try:
-        time.sleep(1)
-        response=requests.get(url,headers=headers)
+        time.sleep(1+random.uniform(0, 2))
+        response=requests.get(url,headers=headers,timeout=5)
         print(response.status_code)
         if response.status_code==200:
             print(re.findall(pattern, response.text))
             return re.findall(pattern, response.text)
         else:
-            time.sleep(1)
+            time.sleep(1+random.uniform(0, 2))
             get_url_list(url, headers, pattern)
     except RequestException:
         return None
 
 
-def main(offset):
+def main():
     #url='https://maoyan.com/board/4?offset=0'+str(offset)
-
+    s = input("input")
+    global filename
+    filename=s+filename
     main_fun()
 
     #print(indexurl)
 
     pattern = re.compile('<li.*?class="listbody__main__row".*?<a.*?href="(.*?)".*?</a>', re.S)
 
+
     #循环每个小区
     for i in range(len(indexurl)):
         #写入小区名
+        if s not in indexestate[i]:
+            continue
         if i==0:
             with open(filename, 'w', newline="")as f:
                 f_csv = csv.writer(f)
@@ -142,6 +150,7 @@ def get_index_page(url):
 def index_one_page(html):
     soup = BeautifulSoup(html, "lxml")
     div_arr = soup.find_all(class_='project-title')
+
     # print(div_arr)
     for div in div_arr:
         try:
@@ -151,7 +160,7 @@ def index_one_page(html):
             for a in tds:
                 # print('https://newhouse.cnnbfdc.com'+a.get('href'))
                 # print(a.get('href'))
-                if a.string == '漫乐荟':
+                if s in a.string :
                     indexurl.append(url + a.get('href'))
                     indexestate.append((a.string, ''))
                     break
@@ -182,7 +191,8 @@ if __name__=='__main__':
     #进程池可以提供指定数量的进程
    # pool=Pool()
    # pool.map(main,[i*10 for i in range(183)])
-    #s=input("input")
+
+
     #print(s)
-    main(0)
+    main()
 
